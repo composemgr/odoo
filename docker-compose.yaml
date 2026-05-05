@@ -19,8 +19,8 @@ services:
     environment:
       TZ: ${TZ:-America/New_York}
     volumes:
-      - ./rootfs/data/odoo:/data
-      - ./rootfs/config/odoo:/config
+      - ./volumes/data/odoo:/data
+      - ./volumes/config/odoo:/config
     depends_on:
       - odoo-db
     healthcheck:
@@ -42,7 +42,7 @@ services:
       POSTGRES_USER: ${DB_USER_NAME:-odoo}
       POSTGRES_PASSWORD: ${DB_USER_PASS:-changeme_db_password}
     volumes:
-      - ./rootfs/data/db/postgres/odoo:/var/lib/postgresql/data
+      - ./volumes/data/db/postgres/odoo:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 30s
