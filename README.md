@@ -50,9 +50,9 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/data/odoo` - Data storage
-- `./rootfs/config/odoo` - Data storage
-- `./rootfs/data/db/postgres/odoo` - Data storage
+- `./volumes/data/odoo` - Data storage
+- `./volumes/config/odoo` - Data storage
+- `./volumes/data/db/postgres/odoo` - Data storage
 
 ## 🔐 Security
 
