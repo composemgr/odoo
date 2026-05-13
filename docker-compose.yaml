@@ -16,6 +16,8 @@ services:
     logging: *default-logging
     networks:
       - odoo
+      - proxy
+      - cloudflare
     ports:
       - "172.17.0.1:8069:8069"
     environment:
@@ -24,6 +26,8 @@ services:
       PORT: 5432
       USER: ${DB_USER_NAME:-odoo}
       PASSWORD: ${DB_USER_PASS:-changeme_db_password}
+      CONTAINER_NAME: odoo-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
     volumes:
       - ./volumes/data/odoo:/var/lib/odoo
       - ./volumes/config/odoo:/etc/odoo
@@ -34,6 +38,22 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'cloudflare.service=http://odoo-app:8069'
+      - 'cloudflare.hostname=odoo.${CLOUDFLARE_ZONE_NAME:-}'
+      - 'traefik.http.routers.odoo-app.entrypoints=http'
+      - 'traefik.http.routers.odoo-app-secure.tls=true'
+      - 'traefik.http.routers.odoo-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.middlewares.odoo-app-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.odoo-app.middlewares=odoo-app-https-redirect'
+      - 'traefik.http.routers.odoo-app-secure.entrypoints=https'
+      - 'traefik.http.routers.odoo-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.routers.odoo-app-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.odoo-app-secure.service=odoo-app'
+      - 'traefik.http.services.odoo-app.loadbalancer.server.port=8069'
 
   odoo-db:
     image: postgres:latest
@@ -48,6 +68,7 @@ services:
       POSTGRES_DB: ${DB_CREATE_DATABASE_NAME:-odoo}
       POSTGRES_USER: ${DB_USER_NAME:-odoo}
       POSTGRES_PASSWORD: ${DB_USER_PASS:-changeme_db_password}
+      CONTAINER_NAME: odoo-db
     volumes:
       - ./volumes/data/db/postgres/odoo:/var/lib/postgresql/data
     healthcheck:
@@ -59,3 +80,7 @@ services:
 networks:
   odoo:
     external: false
+  proxy:
+    external: true
+  cloudflare:
+    external: true
