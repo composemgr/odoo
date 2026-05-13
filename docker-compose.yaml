@@ -12,6 +12,7 @@ services:
     image: odoo:latest
     pull_policy: always
     container_name: odoo-app
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
     restart: always
     logging: *default-logging
     networks:
@@ -79,6 +80,7 @@ services:
 
 networks:
   odoo:
+    name: odoo
     external: false
   proxy:
     external: true
