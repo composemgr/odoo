@@ -1,0 +1,73 @@
+name: odoo
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  app:
+    image: odoo:latest
+    container_name: odoo-app
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: odoo-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+      HOST: db
+      PORT: 5432
+      USER: ${DB_USER_NAME:-odoo}
+      PASSWORD: ${DB_USER_PASS:-replace-with-a-random-password}
+    volumes:
+      - './volumes/data/odoo:/var/lib/odoo:z'
+      - './volumes/config/odoo:/etc/odoo:z'
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8069']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - 'cloudflare.enable=true'
+      - 'cloudflare.service=http://odoo-app:8069'
+      - 'cloudflare.hostname=${BASE_HOST_NAME:-$HOSTNAME}'
+    networks:
+      - odoo
+      - cloudflare
+
+  db:
+    image: postgres:latest
+    container_name: odoo-db
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
+    hostname: odoo-db
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: odoo-db
+      POSTGRES_DB: ${DB_CREATE_DATABASE_NAME:-odoo}
+      POSTGRES_USER: ${DB_USER_NAME:-odoo}
+      POSTGRES_PASSWORD: ${DB_USER_PASS:-replace-with-a-random-password}
+    volumes:
+      - './volumes/db/postgres/odoo:/var/lib/postgresql/data:z'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - odoo
+
+networks:
+  odoo:
+    name: odoo
+    external: false
+  cloudflare:
+    external: true
